@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🎬 MovieHub — Production Cinema & Screening Management System
 
 MovieHub is a robust, modular cinema management and ticketing platform designed to meet an **8–9/10 code quality standard**. It features a modern, accessible admin control room, public customer booking simulation, timing-safe authentication, strict TypeScript typing, Zod schema validation, transaction-safe SQLite persistence, and an automated test suite.
@@ -142,3 +143,6 @@ npm start
 - **SQL Injection Prevention**: All queries use prepared statements with strict parameter binding.
 - **XSS Protection**: Dynamic DOM generation in the frontend uses safe DOM nodes rather than unchecked `innerHTML`.
 - **Concurrency & Durability**: SQLite runs with Write-Ahead Logging (`WAL`) enabled for high concurrency and resilience.
+=======
+# MovieHub
+>>>>>>> da6b086133e81764c25bf800d415b885202dacaf
