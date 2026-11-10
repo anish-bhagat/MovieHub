@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#121218">
+  <title>MOVIEHUB — Cinema Admin Control Room</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/admin-movies.css">
+  <link rel="stylesheet" href="css/admin-cinemas.css">
+  <link rel="stylesheet" href="css/admin-schedule.css">
+  <script type="module" src="js/admin.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" title="Go to customer site">
+      <span class="brand-mark">✦</span>
+      <span>MOVIEHUB</span>
+    </a>
+    <span class="admin-label">CINEMA ADMIN</span>
+    <div class="topbar-actions">
+      <button id="adminThemeToggleBtn" type="button" class="theme-toggle-btn" title="Toggle theme">☀️ Light</button>
+      <a class="back-link" href="/">← Back to cinema</a>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Intro Banner -->
+    <section class="intro">
+      <p class="eyebrow">CONTROL ROOM</p>
+      <h1>Your cinemas,<br><span>one place.</span></h1>
+      <p>Manage cinema locations, movies and screenings, review bookings, and validate digital tickets.</p>
+    </section>
+
+    <!-- Admin Authentication -->
+    <section class="panel access-panel">
+      <div>
+        <p class="eyebrow">ADMIN ACCESS</p>
+        <h2>Connect to your local server.</h2>
+        <p>Enter the admin token configured when starting MovieHub. It stays securely in this browser session.</p>
+      </div>
+      <form id="authForm" class="auth-form">
+        <label for="adminToken">Admin token</label>
+        <input id="adminToken" type="password" autocomplete="current-password" placeholder="Enter token" required>
+        <button class="button primary" type="submit">Connect</button>
+      </form>
+      <p id="connectionStatus" class="status" role="status">Not connected</p>
+    </section>
+
+    <!-- Summary Stats -->
+    <section class="stats" id="stats" aria-live="polite">
+      <article class="stat">
+        <span>Active cinemas</span>
+        <strong id="statCinemas">—</strong>
+      </article>
+      <article class="stat">
+        <span>Movies</span>
+        <strong id="statMovies">—</strong>
+      </article>
+      <article class="stat">
+        <span>Upcoming screenings</span>
+        <strong id="statShowtimes">—</strong>
+      </article>
+      <article class="stat">
+        <span>Confirmed tickets</span>
+        <strong id="statTickets">—</strong>
+      </article>
+    </section>
+
+    <!-- Financial & Revenue Analytics Panel -->
+    <section class="panel analytics-panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">FINANCIAL & OPERATIONS INTELLIGENCE</p>
+          <h2>Revenue & Occupancy Analytics</h2>
+        </div>
+        <div class="analytics-filter-bar">
+          <label for="analyticsRangeSelect">Period:</label>
+          <select id="analyticsRangeSelect">
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="7days">Last 7 Days</option>
+            <option value="30days">Last 30 Days</option>
+          </select>
+          <button id="exportBookingsCsvBtn" class="button light" type="button">📥 Export Bookings CSV</button>
+        </div>
+      </div>
+
+      <div class="analytics-grid">
+        <article class="analytics-card gross">
+          <span class="card-label">Gross Revenue</span>
+          <strong id="analyticsGrossRev">₹0</strong>
+          <span class="card-sub">Combined tickets & concessions</span>
+        </article>
+
+        <article class="analytics-card tickets">
+          <span class="card-label">Ticket Admissions</span>
+          <strong id="analyticsTicketRev">₹0</strong>
+          <span class="card-sub" id="analyticsSeatsSold">0 seats sold</span>
+        </article>
+
+        <article class="analytics-card snacks">
+          <span class="card-label">F&B Snack Sales</span>
+          <strong id="analyticsSnackRev">₹0</strong>
+          <span class="card-sub">Popcorn, drinks & combos</span>
+        </article>
+
+        <article class="analytics-card occupancy">
+          <span class="card-label">Hall Occupancy Rate</span>
+          <div class="occupancy-val-wrap">
+            <strong id="analyticsOccupancyRate">0%</strong>
+            <div class="occupancy-progress-bar">
+              <div id="analyticsOccupancyFill" class="occupancy-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+          <span class="card-sub">Average seat utilization</span>
+        </article>
+
+        <article class="analytics-card top-movie">
+          <span class="card-label">Top Grossing Film</span>
+          <strong id="analyticsTopMovie" class="text-truncate">—</strong>
+          <span class="card-sub">Highest admissions volume</span>
+        </article>
+
+        <article class="analytics-card top-cinema">
+          <span class="card-label">Top Cinema Location</span>
+          <strong id="analyticsTopCinema" class="text-truncate">—</strong>
+          <span class="card-sub">Highest customer footfall</span>
+        </article>
+      </div>
+    </section>
+
+    <!-- Cinema Locations Panel -->
+    <section class="panel catalog-panel cinema-catalog-panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CINEMA LOCATIONS</p>
+          <h2>Manage cinemas</h2>
+        </div>
+        <button id="addCinema" class="button primary" type="button">+ Add cinema</button>
+      </div>
+      <div class="catalog-tools">
+        <label for="cinemaSearch">Search cinemas</label>
+        <input id="cinemaSearch" type="search" placeholder="Search name, city, or address">
+        <label for="cinemaStatusFilter">Show</label>
+        <select id="cinemaStatusFilter">
+          <option value="all">All cinemas</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table class="cinema-table">
+          <thead>
+            <tr>
+              <th>Cinema</th>
+              <th>City</th>
+              <th>Address</th>
+              <th>Facilities</th>
+              <th>Late night</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="cinemaRows">
+            <tr><td colspan="7">Connect to load cinemas.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Cinema Modal Dialog -->
+    <dialog id="cinemaDialog" class="movie-dialog">
+      <form id="cinemaForm" class="movie-form" method="dialog">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">CINEMA DETAILS</p>
+            <h2 id="cinemaDialogTitle">Add a cinema</h2>
+          </div>
+          <button id="closeCinemaDialog" class="button light" type="button">Close</button>
+        </div>
+        <input id="cinemaId" type="hidden">
+        <div class="movie-form-grid">
+          <label>Cinema name
+            <input id="cinemaName" maxlength="120" required placeholder="e.g. PVR Select Citywalk">
+          </label>
+          <label>City
+            <input id="cinemaCity" maxlength="80" required placeholder="e.g. Delhi">
+          </label>
+          <label class="movie-description-field">Street address
+            <input id="cinemaAddress" maxlength="240" required placeholder="Mall, locality, city">
+          </label>
+          <label class="movie-description-field">Google Maps link (optional)
+            <input id="cinemaMapUrl" type="url" maxlength="1200" placeholder="https://maps.google.com/…">
+          </label>
+          <label class="movie-description-field">Facilities, comma-separated
+            <input id="cinemaAmenities" maxlength="720" placeholder="e.g. IMAX, recliners, food court">
+          </label>
+          <label class="movie-active-field">
+            <input id="cinemaLateNight" type="checkbox"> Allow late-night screenings
+          </label>
+          <label class="movie-active-field">
+            <input id="cinemaActive" type="checkbox" checked> Show this cinema to customers and allow new bookings
+          </label>
+        </div>
+        <p class="movie-form-note">Making a cinema inactive hides it from customers and prevents new bookings. Existing booking records remain available.</p>
+        <div class="movie-form-actions">
+          <button id="cancelCinema" class="button light" type="button">Cancel</button>
+          <button class="button primary" type="submit">Save cinema</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Movie Catalog Panel -->
+    <section class="panel catalog-panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">MOVIE CATALOG</p>
+          <h2>Manage movies</h2>
+        </div>
+        <button id="addMovie" class="button primary" type="button">+ Add movie</button>
+      </div>
+      <div class="catalog-tools">
+        <label for="movieSearch">Search movies</label>
+        <input id="movieSearch" type="search" placeholder="Search title or genre">
+        <label for="movieStatusFilter">Show</label>
+        <select id="movieStatusFilter">
+          <option value="all">All movies</option>
+          <option value="active">Active</option>
+          <option value="archived">Archived</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table class="movie-table">
+          <thead>
+            <tr>
+              <th>Poster</th>
+              <th>Movie</th>
+              <th>Genres</th>
+              <th>Length</th>
+              <th>Rating</th>
+              <th>Languages</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="movieRows">
+            <tr><td colspan="8">Connect to load movies.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Movie Modal Dialog -->
+    <dialog id="movieDialog" class="movie-dialog">
+      <form id="movieForm" class="movie-form" method="dialog">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">MOVIE DETAILS</p>
+            <h2 id="movieDialogTitle">Add a movie</h2>
+          </div>
+          <button id="closeMovieDialog" class="button light" type="button">Close</button>
+        </div>
+        <input id="movieId" type="hidden">
+        <div class="movie-form-grid">
+          <label>Movie title
+            <input id="movieName" maxlength="160" required placeholder="e.g. Interstellar">
+          </label>
+          <label>Release year
+            <input id="movieYear" type="number" min="1888" max="2100" required>
+          </label>
+          <label>Genres, comma-separated
+            <input id="movieGenre" maxlength="160" required placeholder="e.g. Sci-Fi, Adventure">
+          </label>
+          <label>Duration in minutes
+            <input id="movieDuration" type="number" min="1" max="600" required>
+          </label>
+          <label>Rating out of 10
+            <input id="movieRating" type="number" min="0" max="10" step="0.1" required>
+          </label>
+          <label>Languages, comma-separated
+            <input id="movieLanguages" maxlength="400" placeholder="e.g. English, Hindi">
+          </label>
+          <label>Age certificate
+            <input id="movieCertificate" maxlength="24" required placeholder="e.g. U/A">
+          </label>
+          <label>Poster image URL
+            <input id="moviePosterUrl" type="url" maxlength="1200" placeholder="https://…">
+          </label>
+          <label>Artwork style
+            <select id="movieArt">
+              <option value="art-blue">Blue</option>
+              <option value="art-violet">Violet</option>
+              <option value="art-ember">Ember</option>
+              <option value="art-gold">Gold</option>
+              <option value="art-night">Night</option>
+            </select>
+          </label>
+          <label class="movie-description-field">Description
+            <textarea id="movieDescription" maxlength="1800" rows="4" required></textarea>
+          </label>
+          <label class="movie-active-field">
+            <input id="movieActive" type="checkbox" checked> Show this movie on the customer website
+          </label>
+        </div>
+        <p class="movie-form-note">Archiving hides a movie from customers and new screenings while retaining its saved record.</p>
+        <div class="movie-form-actions">
+          <button id="cancelMovie" class="button light" type="button">Cancel</button>
+          <button class="button primary" type="submit">Save movie</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Two-column: Schedule + Door Check -->
+    <div class="columns">
+      <section class="panel">
+        <p class="eyebrow">SCHEDULE</p>
+        <h2>Add a screening</h2>
+        <form id="showtimeForm" class="form-grid">
+          <label>Cinema
+            <select id="cinemaSelect" required></select>
+          </label>
+          <label>Movie
+            <select id="movieSelect" required></select>
+          </label>
+          <label>Date
+            <input id="showDate" type="date" required>
+          </label>
+          <label>Time
+            <select id="showTime">
+              <option>10:00 AM</option>
+              <option>1:30 PM</option>
+              <option>5:00 PM</option>
+              <option>9:00 PM</option>
+              <option>11:30 PM</option>
+            </select>
+          </label>
+          <label>Category
+            <input id="showCategory" value="Regular" required>
+          </label>
+          <label>Screen
+            <input id="showScreen" value="Screen 01" required>
+          </label>
+          <label>Starting price (₹)
+            <input id="showPrice" type="number" min="0" value="150" required>
+          </label>
+          <button class="button primary wide" type="submit">Save screening</button>
+        </form>
+      </section>
+
+      <section class="panel door-check-panel">
+        <p class="eyebrow">DOOR CHECK</p>
+        <h2>Validate a ticket</h2>
+        <p>Paste a ticket code or use the camera on a supported browser and device.</p>
+        <form id="scanForm" class="scan-form">
+          <label for="ticketCodeInput">Ticket code</label>
+          <div class="scan-row">
+            <input id="ticketCodeInput" placeholder="MOVIEHUB-…" required>
+            <button class="button dark" type="submit">Validate</button>
+          </div>
+        </form>
+        <div class="camera-actions">
+          <button id="startCamera" class="button light" type="button">Open QR camera</button>
+          <button id="stopCamera" class="button light" type="button" hidden>Stop camera</button>
+        </div>
+        <video id="cameraPreview" playsinline muted hidden></video>
+        <p id="scanResult" class="scan-result" role="status"></p>
+
+        <!-- Live Scan Audit Feed -->
+        <div class="scan-audit-feed-wrap">
+          <div class="audit-feed-header">
+            <h4>Live Scan Activity Feed</h4>
+            <span class="feed-badge-live">● LIVE FEED</span>
+          </div>
+          <div class="table-wrap audit-table-wrap">
+            <table class="scan-audit-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Ticket</th>
+                  <th>Attendee</th>
+                  <th>Movie</th>
+                  <th>Seats</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="scanAuditRows">
+                <tr><td colspan="6">Connect to load scan logs.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Screenings Management Panel -->
+    <section class="panel schedule-panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">SCREENING SCHEDULE</p>
+          <h2>Manage screenings</h2>
+        </div>
+        <button id="refreshShowtimes" class="button light" type="button">Refresh</button>
+      </div>
+      <div class="catalog-tools">
+        <label for="scheduleDate">Date</label>
+        <input id="scheduleDate" type="date">
+        <label for="scheduleCinemaFilter">Cinema</label>
+        <select id="scheduleCinemaFilter">
+          <option value="all">All cinemas</option>
+        </select>
+        <label for="scheduleStatusFilter">Status</label>
+        <select id="scheduleStatusFilter">
+          <option value="all">All</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table class="schedule-table">
+          <thead>
+            <tr>
+              <th>Screening</th>
+              <th>Cinema</th>
+              <th>Date & time</th>
+              <th>Screen</th>
+              <th>Bookings</th>
+              <th>Starting price</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="showtimeRows">
+            <tr><td colspan="8">Connect to load screenings.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Recent Activity / Bookings -->
+    <section class="panel bookings-panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">RECENT ACTIVITY</p>
+          <h2>Bookings</h2>
+        </div>
+        <button id="refreshBookings" class="button light" type="button">Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket</th>
+              <th>Customer</th>
+              <th>Film</th>
+              <th>Screening</th>
+              <th>Seats</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="bookingRows">
+            <tr><td colspan="7">Connect to load bookings.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- F&B Concessions / Snacks Manager Panel -->
+    <section class="panel catalog-panel snacks-catalog-panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">FOOD & BEVERAGES</p>
+          <h2>Concessions & Snacks Manager</h2>
+        </div>
+        <button id="addSnackBtn" class="button primary" type="button">+ Add Snack Item</button>
+      </div>
+      <div class="table-wrap">
+        <table class="snack-table">
+          <thead>
+            <tr>
+              <th>Icon</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Price (₹)</th>
+              <th>Description</th>
+              <th>In Stock</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="snackRows">
+            <tr><td colspan="7">Connect to load snack items.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Promo Codes & Coupons Manager Panel -->
+    <section class="panel catalog-panel promos-catalog-panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">DISCOUNTS & PROMOTIONS</p>
+          <h2>Promo Codes & Coupons</h2>
+        </div>
+        <button id="addPromoBtn" class="button primary" type="button">+ Create Promo Code</button>
+      </div>
+      <div class="table-wrap">
+        <table class="promo-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Discount Type</th>
+              <th>Value</th>
+              <th>Redemptions</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="promoRows">
+            <tr><td colspan="6">Connect to load promo codes.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Dialog: Edit Showtime -->
+    <dialog id="editShowtimeDialog" class="movie-dialog">
+      <form id="editShowtimeForm" class="movie-form" method="dialog">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">SCREENING DETAILS</p>
+            <h2 id="editShowtimeTitle">Edit screening</h2>
+          </div>
+          <button id="closeEditShowtime" class="button light" type="button">Close</button>
+        </div>
+        <input id="editShowtimeId" type="hidden">
+        <div class="movie-form-grid">
+          <label>Cinema
+            <select id="editCinema" required></select>
+          </label>
+          <label>Movie
+            <select id="editMovie" required></select>
+          </label>
+          <label>Date
+            <input id="editDate" type="date" required>
+          </label>
+          <label>Time
+            <select id="editTime">
+              <option>10:00 AM</option>
+              <option>1:30 PM</option>
+              <option>5:00 PM</option>
+              <option>9:00 PM</option>
+              <option>11:30 PM</option>
+            </select>
+          </label>
+          <label>Category
+            <input id="editCategory" maxlength="40" required>
+          </label>
+          <label>Screen
+            <input id="editScreen" maxlength="30" required>
+          </label>
+          <label>Starting price (₹)
+            <input id="editPrice" type="number" min="0" max="100000" required>
+          </label>
+        </div>
+        <p class="movie-form-note">Screenings with bookings can’t be edited, so customer tickets keep their original details. Cancel the screening and resolve those bookings instead.</p>
+        <div class="movie-form-actions">
+          <button id="cancelEditShowtime" class="button light" type="button">Cancel</button>
+          <button class="button primary" type="submit">Save screening</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Dialog: Cancel Showtime -->
+    <dialog id="cancelShowtimeDialog" class="movie-dialog">
+      <form id="cancelShowtimeForm" class="movie-form" method="dialog">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">CANCEL SCREENING</p>
+            <h2 id="cancelShowtimeTitle">Cancel this screening?</h2>
+          </div>
+          <button id="closeCancelShowtime" class="button light" type="button">Close</button>
+        </div>
+        <input id="cancelShowtimeId" type="hidden">
+        <label class="cancel-reason-label">Reason for cancellation
+          <textarea id="cancelReason" maxlength="500" rows="3" required placeholder="For example, venue maintenance or projection failure"></textarea>
+        </label>
+        <p class="movie-form-note">Customer tickets will be invalidated. Paid bookings will be listed for refund or a free replacement ticket. Pending payments will be cancelled and seats released.</p>
+        <div class="movie-form-actions">
+          <button id="cancelCancelShowtime" class="button light" type="button">Keep screening</button>
+          <button class="button primary" type="submit">Cancel screening</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Dialog: Screening Customer Bookings & Resolution -->
+    <dialog id="screeningBookingsDialog" class="movie-dialog booking-resolution-dialog">
+      <div class="movie-form">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">CUSTOMER BOOKINGS</p>
+            <h2 id="screeningBookingsTitle">Screening bookings</h2>
+          </div>
+          <button id="closeScreeningBookings" class="button light" type="button">Close</button>
+        </div>
+        <p id="screeningBookingsNote" class="movie-form-note"></p>
+        <div class="table-wrap">
+          <table class="resolution-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Seats</th>
+                <th>Payment</th>
+                <th>Total</th>
+                <th>Original ticket</th>
+                <th>Resolution</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="screeningBookingRows">
+              <tr><td colspan="7">Loading bookings…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Dialog: Record Refund -->
+    <dialog id="refundDialog" class="movie-dialog">
+      <form id="refundForm" class="movie-form" method="dialog">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">REFUND TRACKING</p>
+            <h2>Record refund</h2>
+          </div>
+          <button id="closeRefundDialog" class="button light" type="button">Close</button>
+        </div>
+        <input id="refundBookingId" type="hidden">
+        <p id="refundAmountText" class="movie-form-note"></p>
+        <p class="refund-warning">This only records a refund you have already completed outside MovieHub. It does not transfer money. Current checkout is simulated.</p>
+        <label class="cancel-reason-label">Refund reference
+          <input id="refundReference" maxlength="120" required placeholder="Payment provider refund ID or manual reference">
+        </label>
+        <div class="movie-form-actions">
+          <button id="cancelRefund" class="button light" type="button">Cancel</button>
+          <button class="button primary" type="submit">Save refund record</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Dialog: Complimentary Replacement Ticket -->
+    <dialog id="replacementDialog" class="movie-dialog">
+      <form id="replacementForm" class="movie-form" method="dialog">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">COMPLIMENTARY TICKET</p>
+            <h2>Issue a free replacement</h2>
+          </div>
+          <button id="closeReplacementDialog" class="button light" type="button">Close</button>
+        </div>
+        <input id="replacementBookingId" type="hidden">
+        <p id="replacementCustomerText" class="movie-form-note"></p>
+        <label class="cancel-reason-label">Choose a future screening
+          <input id="replacementDate" type="date" required>
+        </label>
+        <label class="cancel-reason-label">Available showings
+          <select id="replacementShowtime" required></select>
+        </label>
+        <p class="movie-form-note">MovieHub assigns the same number of seats, preferring the original seat categories. The replacement ticket is free and can be scanned at the door.</p>
+        <p id="replacementResult" class="replacement-result" role="status" hidden></p>
+        <div class="movie-form-actions">
+          <button id="cancelReplacement" class="button light" type="button">Close</button>
+          <button class="button primary" type="submit">Issue ticket</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Dialog: Live Hall Occupancy Inspector -->
+    <dialog id="hallInspectorDialog" class="movie-dialog hall-inspector-dialog">
+      <div class="movie-form inspector-dialog-content">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">AUDITORIUM INSPECTION</p>
+            <h2 id="inspectorTitle">Live Hall Occupancy Map</h2>
+          </div>
+          <div class="inspector-header-actions">
+            <button id="exportHallManifestBtn" class="button light" type="button">📥 Export Hall Manifest CSV</button>
+            <button id="closeHallInspector" class="button light" type="button">Close</button>
+          </div>
+        </div>
+
+        <div class="inspector-meta-bar" id="inspectorMetaBar">
+          <!-- Populated dynamically with cinema, screen, date, time, capacity counts -->
+        </div>
+
+        <div class="inspector-legend">
+          <div class="leg-item"><span class="leg-dot checked-in"></span> Checked-In (<span id="legCheckedInCount">0</span>)</div>
+          <div class="leg-item"><span class="leg-dot booked"></span> Booked / Confirmed (<span id="legBookedCount">0</span>)</div>
+          <div class="leg-item"><span class="leg-dot blocked"></span> Staff Blocked (<span id="legBlockedCount">0</span>)</div>
+          <div class="leg-item"><span class="leg-dot available"></span> Available (<span id="legAvailCount">0</span>)</div>
+          <span class="staff-hint">💡 Tip: Click any available seat to manually block it. Click blocked seat to unblock.</span>
+        </div>
+
+        <div class="inspector-screen-wrap">
+          <div class="inspector-screen-curve"></div>
+          <span class="inspector-screen-label">ALL EYES THIS WAY · THEATER STAGE / SCREEN</span>
+        </div>
+
+        <div class="inspector-seat-map-scroll">
+          <div id="inspectorSeatGrid" class="inspector-seat-grid">
+            <!-- Dynamically rendered auditorium layout -->
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Dialog: Snack Item Form -->
+    <dialog id="snackDialog" class="movie-dialog">
+      <form id="snackForm" class="movie-form" method="dialog">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">F&B CONCESSIONS</p>
+            <h2 id="snackDialogTitle">Add Snack Item</h2>
+          </div>
+          <button id="closeSnackDialog" class="button light" type="button">Close</button>
+        </div>
+        <input id="snackId" type="hidden">
+        <div class="movie-form-grid">
+          <label>Item Name
+            <input id="snackName" maxlength="100" required placeholder="e.g. Truffle Butter Popcorn">
+          </label>
+          <label>Emoji Icon
+            <input id="snackIcon" maxlength="10" required value="🍿" placeholder="🍿, 🥤, 🧀, ☕">
+          </label>
+          <label>Category
+            <select id="snackCategory">
+              <option value="Popcorn">Popcorn</option>
+              <option value="Snacks">Snacks</option>
+              <option value="Beverages">Beverages</option>
+              <option value="Combos">Combos</option>
+              <option value="Desserts">Desserts</option>
+            </select>
+          </label>
+          <label>Price (₹)
+            <input id="snackPrice" type="number" min="1" max="10000" required placeholder="240">
+          </label>
+          <label class="movie-description-field">Description
+            <input id="snackDescription" maxlength="250" placeholder="e.g. Warm artisan glazed corn">
+          </label>
+          <label class="movie-active-field">
+            <input id="snackInStock" type="checkbox" checked> Available in stock for customer orders
+          </label>
+        </div>
+        <div class="movie-form-actions">
+          <button id="cancelSnack" class="button light" type="button">Cancel</button>
+          <button class="button primary" type="submit">Save Snack</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Dialog: Promo Code Form -->
+    <dialog id="promoDialog" class="movie-dialog">
+      <form id="promoForm" class="movie-form" method="dialog">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">DISCOUNT CAMPAIGN</p>
+            <h2 id="promoDialogTitle">Create Promo Code</h2>
+          </div>
+          <button id="closePromoDialog" class="button light" type="button">Close</button>
+        </div>
+        <input id="promoId" type="hidden">
+        <div class="movie-form-grid">
+          <label>Coupon Code
+            <input id="promoCode" maxlength="30" required placeholder="e.g. MOVIEBUFF20" style="text-transform:uppercase;">
+          </label>
+          <label>Discount Type
+            <select id="promoDiscountType">
+              <option value="percentage">Percentage (%)</option>
+              <option value="flat">Flat Amount (₹)</option>
+            </select>
+          </label>
+          <label>Discount Value
+            <input id="promoDiscountValue" type="number" min="1" max="10000" required placeholder="20">
+          </label>
+          <label>Max Redemptions
+            <input id="promoMaxUses" type="number" min="1" max="100000" value="100" required>
+          </label>
+          <label class="movie-active-field">
+            <input id="promoActive" type="checkbox" checked> Active and redeemable at checkout
+          </label>
+        </div>
+        <div class="movie-form-actions">
+          <button id="cancelPromo" class="button light" type="button">Cancel</button>
+          <button class="button primary" type="submit">Save Promo Code</button>
+        </div>
+      </form>
+    </dialog>
+
+    <footer>
+      Local demo admin · Booking checkout is simulated · Configure live payment and production hosting before launch.
+    </footer>
+  </main>
+</body>
+</html>

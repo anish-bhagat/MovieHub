@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MovieHub — Discover Movies & Reserve Tickets</title>
+  <link rel="stylesheet" href="customer.css">
+  <script type="module" src="customer.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark">✦</span>
+      <span>MOVIEHUB</span>
+    </a>
+    <nav class="nav-links">
+      <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Toggle light or dark theme">☀️ Light</button>
+      <button id="openLookupBtn" class="nav-ghost-btn" type="button">🔍 Find My Ticket</button>
+      <a class="admin-pill" href="/admin">Cinema Admin Control Room ↗</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <p class="hero-tag">EXPERIENCE THE MAGIC</p>
+    <h1>Stories crafted for<br><span>the big screen.</span></h1>
+    <p>Select your favorite movie, pick your cinema hall, preview the auditorium, and book tickets & snacks instantly.</p>
+  </section>
+
+  <!-- Filter & Search Bar -->
+  <section class="search-filter-section">
+    <div class="search-filter-bar">
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input id="movieSearchInput" type="search" placeholder="Search movie title, language, or genre…">
+      </div>
+
+      <div class="filter-controls">
+        <label for="cityFilter" class="filter-label">City:</label>
+        <select id="cityFilter">
+          <option value="all">All Cities</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Genre Pills -->
+    <div id="genrePills" class="genre-pills" role="tablist" aria-label="Filter movies by genre">
+      <button type="button" class="genre-pill active" data-genre="all">All Genres</button>
+      <button type="button" class="genre-pill" data-genre="Sci-Fi">Sci-Fi</button>
+      <button type="button" class="genre-pill" data-genre="Action">Action</button>
+      <button type="button" class="genre-pill" data-genre="Adventure">Adventure</button>
+      <button type="button" class="genre-pill" data-genre="Drama">Drama</button>
+      <button type="button" class="genre-pill" data-genre="Animation">Animation</button>
+      <button type="button" class="genre-pill" data-genre="Biography">Biography</button>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="section-title">
+      <span>Now Showing</span>
+      <span id="cinemaCount" class="cinema-count-badge">Loading...</span>
+    </div>
+
+    <div id="moviesGrid" class="movies-grid">
+      <!-- Loaded dynamically via customer.js -->
+    </div>
+  </main>
+
+  <!-- ================= CINEMA SHOWTIMES & BOOKING MODAL ================= -->
+  <dialog id="bookingModal" class="booking-modal">
+    <div class="modal-inner">
+
+      <!-- ================= STEP 1: CINEMA HALLS & SHOWTIMES SCHEDULE ================= -->
+      <div id="scheduleStep" class="modal-step">
+        <div class="modal-header">
+          <div class="movie-brief">
+            <img id="briefPoster" class="brief-poster" src="" alt="Poster" hidden>
+            <div>
+              <span class="eyebrow">SELECT CINEMA & SHOWTIME</span>
+              <h2 id="scheduleMovieTitle">Movie Title</h2>
+              <p id="scheduleMovieMeta" class="schedule-movie-meta">2024 · Sci-Fi · 166m</p>
+            </div>
+          </div>
+          <button id="closeScheduleBtn" class="close-x-btn" type="button" aria-label="Close">✕</button>
+        </div>
+
+        <!-- Date Tabs Filter -->
+        <div class="date-selector-container">
+          <span class="date-selector-label">Select Date:</span>
+          <div id="dateTabs" class="date-tabs" role="tablist">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- PVR Experience / Format Filter -->
+        <div class="format-filter-container">
+          <span class="format-filter-label">Experience:</span>
+          <div id="formatFilterTabs" class="format-filter-tabs" role="tablist">
+            <button type="button" class="format-filter-tab active" data-format="all">All Formats</button>
+            <button type="button" class="format-filter-tab" data-format="IMAX">IMAX 2D</button>
+            <button type="button" class="format-filter-tab" data-format="4DX">4DX 3D</button>
+            <button type="button" class="format-filter-tab" data-format="DOLBY">Dolby Atmos</button>
+            <button type="button" class="format-filter-tab" data-format="P[XL]">P[XL]</button>
+            <button type="button" class="format-filter-tab" data-format="LUXE">Luxe / VIP</button>
+          </div>
+        </div>
+
+        <!-- Cinema Halls List with Showtimes -->
+        <div class="cinemas-schedule-list" id="cinemasScheduleList">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- ================= STEP 2: THEATER SEATING & SNACKS ================= -->
+      <div id="seatingStep" class="modal-step" hidden>
+        <div class="modal-header seating-header">
+          <div>
+            <button id="backToScheduleBtn" class="back-to-schedule-btn" type="button">
+              ← Change Cinema / Show Timing
+            </button>
+            <div style="margin-top: 6px;">
+              <span class="eyebrow" id="seatingAuditoriumBadge">SCREEN 01 · IMAX LASER</span>
+              <h2 id="seatingMovieTitle">Movie Title</h2>
+              <p id="seatingShowtimeMeta" class="seating-showtime-meta">PVR Select Citywalk · Today, 5:00 PM</p>
+            </div>
+          </div>
+          <button id="closeSeatingBtn" class="close-x-btn" type="button" aria-label="Close">✕</button>
+        </div>
+
+        <!-- 10-Minute Seat Reservation Countdown Timer -->
+        <div id="seatTimerBanner" class="seat-timer-banner" hidden>
+          <span class="timer-icon">⏱️</span>
+          <span>Seats held for <strong id="timerCountdown">10:00</strong> — Please complete your checkout before time expires</span>
+        </div>
+
+        <!-- Theater Preview Section -->
+        <section class="theater-section">
+          <div class="screen-indicator-wrap">
+            <div class="screen-curve"></div>
+            <p class="screen-label">ALL EYES THIS WAY · AUDITORIUM SCREEN</p>
+          </div>
+
+          <!-- Seating Legend -->
+          <div class="seat-legend">
+            <div class="legend-item"><span class="seat-sample available"></span> Available</div>
+            <div class="legend-item"><span class="seat-sample selected"></span> Selected</div>
+            <div class="legend-item"><span class="seat-sample occupied"></span> Sold Out</div>
+            <div class="legend-item"><span class="seat-sample vip"></span> VIP Recliner</div>
+          </div>
+
+          <!-- Interactive Seat Grid -->
+          <div class="theater-map-scroll">
+            <div id="theaterGrid" class="theater-grid" role="region" aria-label="Auditorium Seating Structure">
+              <!-- Rendered dynamically: Classic at front, Prime in middle, VIP at back -->
+            </div>
+          </div>
+        </section>
+
+        <!-- F&B Concessions / Snacks Add-On -->
+        <section class="snacks-section">
+          <div class="snacks-header">
+            <div>
+              <span class="eyebrow">FOOD & DRINKS</span>
+              <h3 style="margin: 2px 0 0; font-size: 16px;">Grab Movie Snacks & Popcorn</h3>
+            </div>
+            <span class="snacks-hint">Delivered straight to your seat</span>
+          </div>
+
+          <div class="snacks-grid" id="snacksGrid">
+            <!-- Rendered dynamically (Popcorn, Nachos, Drinks, Combos) -->
+          </div>
+        </section>
+
+        <!-- Customer Checkout Form -->
+        <form id="bookingForm" class="booking-checkout-form">
+          <input type="hidden" id="selectedShowtimeId">
+
+          <div class="selection-summary">
+            <div class="selected-seats-wrap">
+              <span class="summary-label">Selected Seats & Snacks:</span>
+              <div id="selectedSeatsChips" class="selected-seats-chips">
+                <span class="no-seats-prompt">Click seats on the map above to select</span>
+              </div>
+            </div>
+            <div class="price-breakdown">
+              <div id="promoDiscountLine" class="promo-discount-line" hidden>
+                <span>Coupon Discount:</span>
+                <span id="promoDiscountDisplay" style="color: #4ade80;">-₹0</span>
+              </div>
+              <span class="summary-label">Total Payable:</span>
+              <strong id="totalPriceDisplay" class="total-price-value">₹0</strong>
+            </div>
+          </div>
+
+          <!-- Promo Code Box -->
+          <div class="promo-box">
+            <div class="promo-input-group">
+              <input id="promoCodeInput" type="text" placeholder="Have a coupon? (e.g. WELCOME20, FLAT100)" autocomplete="off">
+              <button id="applyPromoBtn" type="button" class="promo-apply-btn">Apply</button>
+            </div>
+            <div id="promoFeedback" class="promo-feedback" hidden></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="custName">Your Full Name</label>
+              <input id="custName" type="text" placeholder="e.g. John Doe" required>
+            </div>
+
+            <div class="form-group">
+              <label for="custEmail">Email Address</label>
+              <input id="custEmail" type="email" placeholder="e.g. john@example.com" required>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button id="cancelBookingBtn" class="close-btn" type="button">Cancel</button>
+            <button id="submitBookingBtn" class="book-btn" type="submit" disabled>Select Seats to Continue</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ================= STEP 3: BOARDING-PASS DIGITAL TICKET ================= -->
+      <div id="ticketSuccess" class="ticket-success-view" hidden>
+        <div class="ticket-success-header">
+          <div class="success-icon">✓</div>
+          <h3>Reservation Confirmed!</h3>
+          <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-dim);">Your digital pass is ready to present at the theater door scanner.</p>
+        </div>
+
+        <!-- Stylized Boarding Pass Cinema Ticket -->
+        <div id="boardingPassCard" class="boarding-pass">
+          <div class="pass-stub-left">
+            <div class="pass-brand">
+              <span class="pass-brand-mark">✦</span>
+              <span>MOVIEHUB PASS</span>
+            </div>
+            <h2 id="passMovieTitle" class="pass-movie-title">Movie Title</h2>
+            <div class="pass-grid">
+              <div>
+                <span class="pass-label">CINEMA</span>
+                <strong id="passCinema" class="pass-val">PVR Select Citywalk</strong>
+              </div>
+              <div>
+                <span class="pass-label">SCREEN</span>
+                <strong id="passScreen" class="pass-val">Screen 01 (IMAX)</strong>
+              </div>
+              <div>
+                <span class="pass-label">DATE & TIME</span>
+                <strong id="passDateTime" class="pass-val">Today @ 5:00 PM</strong>
+              </div>
+              <div>
+                <span class="pass-label">SEATS</span>
+                <strong id="passSeats" class="pass-val pass-seats-highlight">E5, E6</strong>
+              </div>
+            </div>
+            <div id="passSnacksRow" class="pass-snacks-row" hidden>
+              <span class="pass-label">SNACKS INCLUDED:</span>
+              <span id="passSnacksText" class="pass-snacks-text">1x Caramel Popcorn</span>
+            </div>
+            <div class="pass-footer">
+              <div>
+                <span class="pass-label">ATTENDEE</span>
+                <span id="passCustomer" class="pass-val-sm">John Doe</span>
+              </div>
+              <div>
+                <span class="pass-label">TOTAL PAID</span>
+                <strong id="passTotal" class="pass-val">₹900</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Perforated Tear Divider -->
+          <div class="pass-perforation">
+            <div class="notch notch-top"></div>
+            <div class="perf-line"></div>
+            <div class="notch notch-bottom"></div>
+          </div>
+
+          <!-- Right Stub with QR Code -->
+          <div class="pass-stub-right">
+            <span class="pass-label" style="text-align: center;">DOOR ENTRY PASS</span>
+            <div id="passQrCode" class="pass-qr-wrap">
+              <!-- SVG QR Code rendered here -->
+            </div>
+            <strong id="passTicketCode" class="pass-ticket-code">MOVIEHUB-XXXX</strong>
+            <span class="pass-scan-instruction">Scan at gate entrance</span>
+          </div>
+        </div>
+
+        <div class="ticket-action-buttons">
+          <button id="printTicketBtn" class="ticket-print-btn" type="button">🖨️ Print / Save Ticket (PDF)</button>
+          <button id="finishBtn" class="book-btn" type="button">Back to Movies</button>
+        </div>
+      </div>
+
+    </div>
+  </dialog>
+
+  <!-- ================= IN-APP TRAILER MODAL ================= -->
+  <dialog id="trailerModal" class="trailer-modal">
+    <div class="trailer-modal-inner">
+      <div class="trailer-header">
+        <h3 id="trailerMovieTitle">Watch Official Trailer</h3>
+        <button id="closeTrailerBtn" class="close-x-btn" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="trailer-video-wrap">
+        <iframe id="trailerIframe" src="" title="Movie Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ================= "FIND MY TICKET" LOOKUP MODAL ================= -->
+  <dialog id="lookupModal" class="lookup-modal">
+    <div class="lookup-modal-inner">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">SELF-SERVICE LOOKUP</span>
+          <h2>Find My Tickets</h2>
+          <p style="font-size: 13px; color: var(--text-dim); margin: 4px 0 0;">Enter your ticket code (e.g. MOVIEHUB-7K9A-3M) or your email address.</p>
+        </div>
+        <button id="closeLookupBtn" class="close-x-btn" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <form id="lookupForm" class="lookup-form">
+        <div class="lookup-input-row">
+          <input id="lookupQuery" type="text" placeholder="Enter ticket code or customer email…" required>
+          <button class="book-btn" type="submit">Search</button>
+        </div>
+      </form>
+
+      <div id="lookupResults" class="lookup-results-list">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ================= PVR SHOWTIME INFO & SPECIFICATIONS DIALOG ================= -->
+  <dialog id="pvrShowtimeInfoDialog" class="pvr-info-dialog">
+    <div class="pvr-info-dialog-inner">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow" id="pvrDialogBadge">AUDITORIUM SPECIFICATION</span>
+          <h2 id="pvrDialogCinemaName">PVR Cinemas</h2>
+          <p id="pvrDialogMovieMeta" class="schedule-movie-meta">Movie · Date · Time</p>
+        </div>
+        <button id="closePvrInfoBtn" class="close-x-btn" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <!-- Specs & Technical Highlights -->
+      <div class="pvr-specs-grid">
+        <div class="pvr-spec-card">
+          <div class="spec-icon">📽️</div>
+          <div class="spec-body">
+            <strong id="pvrSpecProjectionTitle">Barco 4K RGB Laser</strong>
+            <span id="pvrSpecProjectionDesc">High-frame-rate laser projection with true blacks & 60fps clarity.</span>
+          </div>
+        </div>
+        <div class="pvr-spec-card">
+          <div class="spec-icon">🔊</div>
+          <div class="spec-body">
+            <strong id="pvrSpecSoundTitle">Dolby Atmos 64-Channel</strong>
+            <span id="pvrSpecSoundDesc">360° object-based 3D soundscape with overhead ceiling speakers.</span>
+          </div>
+        </div>
+        <div class="pvr-spec-card">
+          <div class="spec-icon">💺</div>
+          <div class="spec-body">
+            <strong>Luxury Motorized Recliners & Plush Loungers</strong>
+            <span>Generous legroom, auto-reclining seats, and personal food call service.</span>
+          </div>
+        </div>
+        <div class="pvr-spec-card">
+          <div class="spec-icon">🍿</div>
+          <div class="spec-body">
+            <strong>Gourmet In-Seat Food & Beverages</strong>
+            <span>Chef-crafted snacks and fresh hot meals delivered directly to your seat.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing & Seating Categories Matrix -->
+      <div class="pvr-price-matrix-wrap">
+        <h4 class="pvr-section-title">Available Seating Categories & Pricing</h4>
+        <div id="pvrPriceMatrix" class="pvr-price-matrix">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Cinema Amenities & Terms Checklist -->
+      <div class="pvr-terms-wrap">
+        <h4 class="pvr-section-title">Cinema Guidelines & Amenities</h4>
+        <ul class="pvr-amenities-list">
+          <li><span>🎟️</span> <strong>100% Digital M-Ticket:</strong> Simply show QR code on mobile at the entrance gate.</li>
+          <li><span>🔄</span> <strong>PVR Shield Cancellation:</strong> 100% refund available up to 20 mins prior to showtime.</li>
+          <li><span>♿</span> <strong>Wheelchair Friendly:</strong> Dedicated step-free elevator access and wheelchair bays.</li>
+          <li><span>🚫</span> <strong>Outside Food Policy:</strong> Outside food & beverages strictly not permitted per theater policy.</li>
+        </ul>
+      </div>
+
+      <div class="pvr-dialog-footer">
+        <button id="pvrDialogCloseFooterBtn" class="cancel-step-btn" type="button">Close</button>
+        <button id="pvrDialogProceedBtn" class="book-btn" type="button">Proceed to Select Seats →</button>
+      </div>
+    </div>
+  </dialog>
+</body>
+</html>

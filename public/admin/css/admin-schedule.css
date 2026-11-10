@@ -1,0 +1,103 @@
+/* Screening Schedule & Booking Resolution Styles */
+
+.schedule-panel {
+  margin-top: 18px;
+}
+
+.screening-name {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.screening-name strong {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.screening-name small {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.cancel-reason-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 14px;
+}
+
+.cancel-reason-label textarea,
+.cancel-reason-label select,
+.cancel-reason-label input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #fbfaf8;
+  border-radius: 9px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.booking-resolution-dialog {
+  max-width: 920px !important;
+}
+
+.resolution-table th,
+.resolution-table td {
+  padding: 12px 14px;
+}
+
+.resolution-subtext {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.resolution-ticket {
+  background: #f4f2ee;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.refund-warning {
+  background: #fff4eb;
+  border-left: 3px solid var(--accent);
+  padding: 10px 14px;
+  border-radius: 0 8px 8px 0;
+  font-size: 12px;
+  color: #8c3b1a;
+  margin: 14px 0;
+}
+
+.replacement-result {
+  margin-top: 16px;
+  padding: 14px;
+  background: #eaf5ed;
+  border: 1px solid #c2e2cc;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: #1d6b3c;
+}
+
+.replacement-result strong {
+  font-family: monospace;
+  font-size: 16px;
+  background: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  align-self: flex-start;
+  letter-spacing: 0.05em;
+  border: 1px dashed #23734a;
+}

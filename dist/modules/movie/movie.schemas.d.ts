@@ -1,0 +1,75 @@
+import { z } from 'zod';
+export declare const createMovieSchema: z.ZodObject<{
+    name: z.ZodString;
+    releaseYear: z.ZodNumber;
+    genre: z.ZodString;
+    durationMinutes: z.ZodNumber;
+    rating: z.ZodNumber;
+    languages: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+    certificate: z.ZodDefault<z.ZodString>;
+    posterUrl: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    art: z.ZodDefault<z.ZodString>;
+    description: z.ZodDefault<z.ZodString>;
+    active: z.ZodDefault<z.ZodBoolean>;
+}, "strip", z.ZodTypeAny, {
+    name: string;
+    active: boolean;
+    releaseYear: number;
+    genre: string;
+    durationMinutes: number;
+    rating: number;
+    languages: string[];
+    certificate: string;
+    art: string;
+    description: string;
+    posterUrl?: string | null | undefined;
+}, {
+    name: string;
+    releaseYear: number;
+    genre: string;
+    durationMinutes: number;
+    rating: number;
+    active?: boolean | undefined;
+    languages?: string[] | undefined;
+    certificate?: string | undefined;
+    posterUrl?: string | null | undefined;
+    art?: string | undefined;
+    description?: string | undefined;
+}>;
+export declare const updateMovieSchema: z.ZodObject<{
+    name: z.ZodOptional<z.ZodString>;
+    releaseYear: z.ZodOptional<z.ZodNumber>;
+    genre: z.ZodOptional<z.ZodString>;
+    durationMinutes: z.ZodOptional<z.ZodNumber>;
+    rating: z.ZodOptional<z.ZodNumber>;
+    languages: z.ZodOptional<z.ZodDefault<z.ZodArray<z.ZodString, "many">>>;
+    certificate: z.ZodOptional<z.ZodDefault<z.ZodString>>;
+    posterUrl: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodString>>>;
+    art: z.ZodOptional<z.ZodDefault<z.ZodString>>;
+    description: z.ZodOptional<z.ZodDefault<z.ZodString>>;
+    active: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
+}, "strip", z.ZodTypeAny, {
+    name?: string | undefined;
+    active?: boolean | undefined;
+    releaseYear?: number | undefined;
+    genre?: string | undefined;
+    durationMinutes?: number | undefined;
+    rating?: number | undefined;
+    languages?: string[] | undefined;
+    certificate?: string | undefined;
+    posterUrl?: string | null | undefined;
+    art?: string | undefined;
+    description?: string | undefined;
+}, {
+    name?: string | undefined;
+    active?: boolean | undefined;
+    releaseYear?: number | undefined;
+    genre?: string | undefined;
+    durationMinutes?: number | undefined;
+    rating?: number | undefined;
+    languages?: string[] | undefined;
+    certificate?: string | undefined;
+    posterUrl?: string | null | undefined;
+    art?: string | undefined;
+    description?: string | undefined;
+}>;

@@ -1,0 +1,27 @@
+/* Cinema Management Styles */
+
+.cinema-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cinema-name-cell strong {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.cinema-name-cell small a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.cinema-name-cell small a:hover {
+  text-decoration: underline;
+}
+
+.cinema-table td {
+  vertical-align: middle;
+}
