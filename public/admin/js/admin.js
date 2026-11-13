@@ -18,6 +18,8 @@ let currentInspectedShowtimeId = null;
 let adminSnacks = [];
 let adminPromos = [];
 let adminScanLogs = [];
+let currentAnalyticsData = null;
+let currentChartPeriod = 'monthly';
 
 // Theme Management
 function initAdminTheme() {
@@ -563,6 +565,206 @@ function renderAdminMovies() {
   }
 }
 
+// ================= POSTER UPLOADER & VISUAL ADJUSTER =================
+let cropperImage = null;
+let cropperScale = 1;
+let cropperBaseScale = 1;
+let cropperOffsetX = 0;
+let cropperOffsetY = 0;
+let cropperRotation = 0;
+let isCropperDragging = false;
+let cropperDragStartX = 0;
+let cropperDragStartY = 0;
+let cropperInitialOffsetX = 0;
+let cropperInitialOffsetY = 0;
+let hasNewAdjustedPoster = false;
+
+function setPosterInputMode(mode = 'upload') {
+  const isUpload = mode === 'upload';
+  $('#posterTabUpload')?.classList.toggle('active', isUpload);
+  $('#posterTabUrl')?.classList.toggle('active', !isUpload);
+  if ($('#posterUploadPane')) $('#posterUploadPane').hidden = !isUpload;
+  if ($('#posterUrlPane')) $('#posterUrlPane').hidden = isUpload;
+}
+
+function initPosterCropper() {
+  $('#posterTabUpload')?.addEventListener('click', () => setPosterInputMode('upload'));
+  $('#posterTabUrl')?.addEventListener('click', () => setPosterInputMode('url'));
+
+  const dropzone = $('#posterDropzone');
+  const fileInput = $('#posterFileInput');
+
+  dropzone?.addEventListener('click', () => fileInput?.click());
+  $('#posterReplaceBtn')?.addEventListener('click', () => fileInput?.click());
+
+  dropzone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+  });
+
+  dropzone?.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+
+  dropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    const file = e.dataTransfer?.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      loadPosterFile(file);
+    }
+  });
+
+  fileInput?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      loadPosterFile(file);
+    }
+  });
+
+  // Slider & Button Controls
+  $('#posterZoomRange')?.addEventListener('input', (e) => {
+    cropperScale = Number(e.target.value);
+    const display = $('#posterZoomDisplay');
+    if (display) display.textContent = `${Math.round(cropperScale * 100)}%`;
+    drawPosterCanvas();
+  });
+
+  $('#posterRotateBtn')?.addEventListener('click', () => {
+    cropperRotation = (cropperRotation + 90) % 360;
+    drawPosterCanvas();
+  });
+
+  $('#posterResetBtn')?.addEventListener('click', () => {
+    resetPosterAdjustments();
+  });
+
+  // Canvas Drag Interaction
+  const canvas = $('#posterCanvas');
+  if (canvas) {
+    canvas.addEventListener('mousedown', (e) => {
+      if (!cropperImage) return;
+      isCropperDragging = true;
+      cropperDragStartX = e.clientX;
+      cropperDragStartY = e.clientY;
+      cropperInitialOffsetX = cropperOffsetX;
+      cropperInitialOffsetY = cropperOffsetY;
+      canvas.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isCropperDragging || !cropperImage) return;
+      const dx = e.clientX - cropperDragStartX;
+      const dy = e.clientY - cropperDragStartY;
+      cropperOffsetX = cropperInitialOffsetX + dx;
+      cropperOffsetY = cropperInitialOffsetY + dy;
+      drawPosterCanvas();
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isCropperDragging) {
+        isCropperDragging = false;
+        if (canvas) canvas.style.cursor = 'grab';
+      }
+    });
+
+    // Touch support for tablets/mobile
+    canvas.addEventListener(
+      'touchstart',
+      (e) => {
+        if (!cropperImage || !e.touches[0]) return;
+        isCropperDragging = true;
+        cropperDragStartX = e.touches[0].clientX;
+        cropperDragStartY = e.touches[0].clientY;
+        cropperInitialOffsetX = cropperOffsetX;
+        cropperInitialOffsetY = cropperOffsetY;
+      },
+      { passive: true }
+    );
+
+    window.addEventListener(
+      'touchmove',
+      (e) => {
+        if (!isCropperDragging || !cropperImage || !e.touches[0]) return;
+        const dx = e.touches[0].clientX - cropperDragStartX;
+        const dy = e.touches[0].clientY - cropperDragStartY;
+        cropperOffsetX = cropperInitialOffsetX + dx;
+        cropperOffsetY = cropperInitialOffsetY + dy;
+        drawPosterCanvas();
+      },
+      { passive: true }
+    );
+
+    window.addEventListener('touchend', () => {
+      isCropperDragging = false;
+    });
+  }
+}
+
+function loadPosterFile(file) {
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
+    img.onload = () => {
+      cropperImage = img;
+      hasNewAdjustedPoster = true;
+      resetPosterAdjustments();
+      if ($('#posterDropzone')) $('#posterDropzone').hidden = true;
+      if ($('#posterAdjustArea')) $('#posterAdjustArea').hidden = false;
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetPosterAdjustments() {
+  if (!cropperImage) return;
+  const canvas = $('#posterCanvas');
+  const targetW = canvas.width; // 400
+  const targetH = canvas.height; // 600
+
+  // Calculate base scale to fill canvas (cover)
+  const scaleW = targetW / cropperImage.width;
+  const scaleH = targetH / cropperImage.height;
+  cropperBaseScale = Math.max(scaleW, scaleH);
+
+  cropperScale = 1;
+  cropperRotation = 0;
+  cropperOffsetX = 0;
+  cropperOffsetY = 0;
+
+  if ($('#posterZoomRange')) $('#posterZoomRange').value = '1';
+  if ($('#posterZoomDisplay')) $('#posterZoomDisplay').textContent = '100%';
+
+  drawPosterCanvas();
+}
+
+function drawPosterCanvas() {
+  const canvas = $('#posterCanvas');
+  if (!canvas || !cropperImage) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.save();
+
+  // Move to center
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate((cropperRotation * Math.PI) / 180);
+
+  const drawWidth = cropperImage.width * cropperBaseScale * cropperScale;
+  const drawHeight = cropperImage.height * cropperBaseScale * cropperScale;
+
+  ctx.drawImage(
+    cropperImage,
+    -drawWidth / 2 + cropperOffsetX,
+    -drawHeight / 2 + cropperOffsetY,
+    drawWidth,
+    drawHeight
+  );
+
+  ctx.restore();
+}
+
 /**
  * Movie Modal Management
  */
@@ -582,6 +784,20 @@ function openMovieForm(movie = null) {
   $('#movieArt').value = movie?.art || 'art-ember';
   $('#movieDescription').value = movie?.description || '';
   $('#movieActive').checked = movie ? movie.active : true;
+
+  // Reset cropper & poster area
+  cropperImage = null;
+  hasNewAdjustedPoster = false;
+  if ($('#posterFileInput')) $('#posterFileInput').value = '';
+  if ($('#posterDropzone')) $('#posterDropzone').hidden = false;
+  if ($('#posterAdjustArea')) $('#posterAdjustArea').hidden = true;
+
+  if (movie?.posterUrl) {
+    setPosterInputMode('url');
+  } else {
+    setPosterInputMode('upload');
+  }
+
   $('#movieDialog').showModal();
 }
 
@@ -844,6 +1060,7 @@ async function fetchAnalytics(range) {
   const selectedRange = range || $('#analyticsRangeSelect')?.value || 'all';
   try {
     const data = await request(`/api/admin/analytics?range=${encodeURIComponent(selectedRange)}`);
+    currentAnalyticsData = data;
     setText('#analyticsGrossRev', `₹${Number(data.grossRevenue || 0).toLocaleString('en-IN')}`);
     setText('#analyticsTicketRev', `₹${Number(data.ticketRevenue || 0).toLocaleString('en-IN')}`);
     setText('#analyticsSnackRev', `₹${Number(data.snackRevenue || 0).toLocaleString('en-IN')}`);
@@ -854,9 +1071,168 @@ async function fetchAnalytics(range) {
     }
     setText('#analyticsTopMovie', data.topMovie || '—');
     setText('#analyticsTopCinema', data.topCinema || '—');
+    setText('#analyticsTopGenre', data.topGenre || '—');
+    setText(
+      '#analyticsTopGenreSub',
+      data.topGenreTickets ? `${data.topGenreTickets} tickets booked` : 'Most tickets booked'
+    );
+
+    renderTicketSalesChart(currentChartPeriod);
+    renderGenreDistribution();
   } catch (error) {
     console.error('Failed to load analytics:', error);
   }
+}
+
+function renderTicketSalesChart(period = 'monthly') {
+  currentChartPeriod = period;
+  const container = $('#ticketSalesChart');
+  if (!container) return;
+  container.replaceChildren();
+
+  // Update button active state
+  $('#chartMonthlyBtn')?.classList.toggle('active', period === 'monthly');
+  $('#chartYearlyBtn')?.classList.toggle('active', period === 'yearly');
+
+  if (!currentAnalyticsData) return;
+
+  const points =
+    (period === 'monthly' ? currentAnalyticsData.monthlySales : currentAnalyticsData.yearlySales) || [];
+
+  if (!points.length) {
+    const emptyMsg = document.createElement('div');
+    emptyMsg.className = 'chart-empty-state';
+    emptyMsg.textContent = `No ${period} ticket sales data recorded for this filter.`;
+    container.append(emptyMsg);
+    setText('#ticketSalesTrendLabel', `No ${period} sales data`);
+    return;
+  }
+
+  const maxTickets = Math.max(...points.map((p) => p.ticketsSold), 1);
+  const totalPeriodTickets = points.reduce((acc, p) => acc + p.ticketsSold, 0);
+  const totalPeriodRev = points.reduce((acc, p) => acc + p.revenue, 0);
+
+  setText(
+    '#ticketSalesTrendLabel',
+    `Total: ${totalPeriodTickets} tickets sold across ${points.length} ${
+      period === 'monthly' ? 'months' : 'years'
+    } (₹${Number(totalPeriodRev).toLocaleString('en-IN')})`
+  );
+
+  const chartTrack = document.createElement('div');
+  chartTrack.className = 'chart-bars-track';
+
+  points.forEach((point) => {
+    const barCol = document.createElement('div');
+    barCol.className = 'chart-bar-col';
+
+    const barHeightPercent = Math.max(10, Math.round((point.ticketsSold / maxTickets) * 100));
+
+    const barValue = document.createElement('span');
+    barValue.className = 'bar-value';
+    barValue.textContent = point.ticketsSold;
+
+    const barFillWrap = document.createElement('div');
+    barFillWrap.className = 'bar-fill-wrap';
+
+    const barFill = document.createElement('div');
+    barFill.className = 'bar-fill';
+    barFill.style.height = `${barHeightPercent}%`;
+    barFill.setAttribute(
+      'title',
+      `${point.label}: ${point.ticketsSold} tickets sold (₹${Number(point.revenue).toLocaleString('en-IN')})`
+    );
+
+    barFillWrap.append(barFill);
+
+    const barLabel = document.createElement('span');
+    barLabel.className = 'bar-label';
+    barLabel.textContent = point.label;
+
+    barCol.append(barValue, barFillWrap, barLabel);
+    chartTrack.append(barCol);
+  });
+
+  container.append(chartTrack);
+}
+
+function renderGenreDistribution() {
+  const container = $('#genreDistributionChart');
+  if (!container) return;
+  container.replaceChildren();
+
+  if (!currentAnalyticsData) return;
+
+  const genres = currentAnalyticsData.genreBreakdown || [];
+  const topGenre = currentAnalyticsData.topGenre || '—';
+  const topGenreTickets = currentAnalyticsData.topGenreTickets || 0;
+
+  const badge = $('#genreLeaderBadge');
+  if (badge) {
+    if (topGenre && topGenre !== 'N/A') {
+      badge.textContent = `🏆 Max Tickets: ${topGenre} (${topGenreTickets} sold)`;
+      badge.style.display = 'inline-flex';
+    } else {
+      badge.textContent = 'Top: —';
+    }
+  }
+
+  if (!genres.length) {
+    const emptyMsg = document.createElement('div');
+    emptyMsg.className = 'chart-empty-state';
+    emptyMsg.textContent = 'No genre data recorded yet.';
+    container.append(emptyMsg);
+    setText('#genreSummaryText', 'No genre ticket data');
+    return;
+  }
+
+  setText(
+    '#genreSummaryText',
+    `"${topGenre}" leads with ${topGenreTickets} tickets sold (${genres[0]?.percentage || 0}% share of catalog admissions).`
+  );
+
+  const colors = [
+    'linear-gradient(90deg, #f59e0b, #ef4444)',
+    'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+    'linear-gradient(90deg, #10b981, #06b6d4)',
+    'linear-gradient(90deg, #ec4899, #f43f5e)',
+    'linear-gradient(90deg, #6366f1, #3b82f6)',
+    'linear-gradient(90deg, #14b8a6, #10b981)',
+    'linear-gradient(90deg, #8b5cf6, #d946ef)',
+  ];
+
+  genres.forEach((item, index) => {
+    const row = document.createElement('div');
+    row.className = `genre-row ${index === 0 ? 'top-genre-row' : ''}`;
+
+    const info = document.createElement('div');
+    info.className = 'genre-info';
+
+    const name = document.createElement('span');
+    name.className = 'genre-name';
+    name.innerHTML =
+      index === 0
+        ? `<strong>🏆 ${item.genre}</strong> <span class="genre-tag">MAX TICKETS</span>`
+        : `<strong>${item.genre}</strong>`;
+
+    const stats = document.createElement('span');
+    stats.className = 'genre-stats';
+    stats.textContent = `${item.ticketsSold} tickets (${item.percentage}%)`;
+
+    info.append(name, stats);
+
+    const barBg = document.createElement('div');
+    barBg.className = 'genre-bar-bg';
+
+    const barFill = document.createElement('div');
+    barFill.className = 'genre-bar-fill';
+    barFill.style.width = `${Math.min(100, Math.max(4, item.percentage))}%`;
+    barFill.style.background = colors[index % colors.length];
+
+    barBg.append(barFill);
+    row.append(info, barBg);
+    container.append(row);
+  });
 }
 
 // ================= ONE-CLICK CSV EXPORTS =================
@@ -1398,6 +1774,8 @@ async function stopCamera() {
 
 // Event Bindings
 function initEventHandlers() {
+  initPosterCropper();
+
   // Authentication
   $('#authForm').addEventListener('submit', (event) => {
     event.preventDefault();
@@ -1676,9 +2054,29 @@ function initEventHandlers() {
     const path = id ? `/api/admin/movies/${id}` : '/api/admin/movies';
 
     try {
+      let finalPosterUrl = $('#moviePosterUrl').value.trim() || null;
+
+      // If user uploaded & adjusted a poster image, upload it first
+      if (hasNewAdjustedPoster && cropperImage) {
+        button.textContent = 'Uploading poster…';
+        const canvas = $('#posterCanvas');
+        const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        const uploadRes = await request('/api/admin/upload-poster', {
+          method: 'POST',
+          body: JSON.stringify({ image: jpegDataUrl }),
+        });
+        if (uploadRes?.url) {
+          finalPosterUrl = uploadRes.url;
+        }
+      }
+
+      button.textContent = 'Saving movie…';
+      const payload = movieFormPayload();
+      payload.posterUrl = finalPosterUrl;
+
       await request(path, {
         method: id ? 'PUT' : 'POST',
-        body: JSON.stringify(movieFormPayload()),
+        body: JSON.stringify(payload),
       });
       $('#movieDialog').close();
       setStatus(id ? 'Movie updated.' : 'Movie added.');
@@ -1687,6 +2085,7 @@ function initEventHandlers() {
       setStatus(error.message);
     } finally {
       button.disabled = false;
+      button.textContent = 'Save movie';
     }
   });
 
@@ -1753,6 +2152,8 @@ function initEventHandlers() {
 
   // Analytics & Exports
   $('#analyticsRangeSelect')?.addEventListener('change', (e) => fetchAnalytics(e.target.value));
+  $('#chartMonthlyBtn')?.addEventListener('click', () => renderTicketSalesChart('monthly'));
+  $('#chartYearlyBtn')?.addEventListener('click', () => renderTicketSalesChart('yearly'));
   $('#exportBookingsCsvBtn')?.addEventListener('click', exportBookingsCsv);
   $('#exportHallManifestBtn')?.addEventListener('click', exportHallManifestCsv);
   $('#closeHallInspector')?.addEventListener('click', () => $('#hallInspectorDialog').close());

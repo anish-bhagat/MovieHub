@@ -175,25 +175,38 @@ function seedDatabase(customDb) {
         screen: 'Audi 4',
         startingPrice: 180,
     });
-    // 4. Seed Bookings
+    // 4. Seed Bookings (Current & Historical for Reports & Trend Analytics)
+    const bookingStmt = db.prepare(`
+    INSERT INTO bookings (id, ticket_code, showtime_id, customer_name, email, seats, total, status, payment_status, payment_method, resolution_status, created_at, checked_in_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+    // Current month bookings
     const b1Id = node_crypto_1.default.randomUUID();
     const b1Ticket = 'MOVIEHUB-7K9A-3M';
-    db.prepare(`
-    INSERT INTO bookings (id, ticket_code, showtime_id, customer_name, email, seats, total, status, payment_status, payment_method, resolution_status)
-    VALUES (?, ?, ?, 'Aarav Sharma', 'aarav.sharma@example.com', ?, 760, 'confirmed', 'demo_paid', 'Simulated UPI', 'none')
-  `).run(b1Id, b1Ticket, s1.id, JSON.stringify(['F12', 'F13']));
+    bookingStmt.run(b1Id, b1Ticket, s1.id, 'Aarav Sharma', 'aarav.sharma@example.com', JSON.stringify(['F12', 'F13']), 760, 'confirmed', 'demo_paid', 'Simulated UPI', 'none', new Date().toISOString(), null);
     const b2Id = node_crypto_1.default.randomUUID();
     const b2Ticket = 'MOVIEHUB-4B1C-8X';
-    db.prepare(`
-    INSERT INTO bookings (id, ticket_code, showtime_id, customer_name, email, seats, total, status, payment_status, payment_method, resolution_status, checked_in_at)
-    VALUES (?, ?, ?, 'Priya Patel', 'priya.patel@example.com', ?, 900, 'checked_in', 'paid', 'Credit Card', 'none', datetime('now', '-30 minutes'))
-  `).run(b2Id, b2Ticket, s2.id, JSON.stringify(['G10', 'G11']));
+    bookingStmt.run(b2Id, b2Ticket, s2.id, 'Priya Patel', 'priya.patel@example.com', JSON.stringify(['G10', 'G11']), 900, 'checked_in', 'paid', 'Credit Card', 'none', new Date().toISOString(), new Date(Date.now() - 1800000).toISOString());
     const b3Id = node_crypto_1.default.randomUUID();
     const b3Ticket = 'MOVIEHUB-9Z4D-2W';
-    db.prepare(`
-    INSERT INTO bookings (id, ticket_code, showtime_id, customer_name, email, seats, total, status, payment_status, payment_method, resolution_status)
-    VALUES (?, ?, ?, 'Vikramaditya Roy', 'vikram.roy@example.com', ?, 1100, 'confirmed', 'demo_paid', 'Net Banking', 'none')
-  `).run(b3Id, b3Ticket, s4.id, JSON.stringify(['VIP-A1', 'VIP-A2']));
+    bookingStmt.run(b3Id, b3Ticket, s4.id, 'Vikramaditya Roy', 'vikram.roy@example.com', JSON.stringify(['VIP-A1', 'VIP-A2', 'VIP-A3']), 1650, 'confirmed', 'demo_paid', 'Net Banking', 'none', new Date().toISOString(), null);
+    // Historical bookings for Monthly and Yearly analytics
+    const historical = [
+        { name: 'Rohan Mehra', email: 'rohan.m@example.com', st: s2.id, seats: ['C1', 'C2', 'C3', 'C4'], total: 1800, date: '2025-06-12 18:30:00' },
+        { name: 'Ananya Verma', email: 'ananya.v@example.com', st: s1.id, seats: ['D5', 'D6'], total: 950, date: '2025-09-20 20:00:00' },
+        { name: 'Kavita Singh', email: 'kavita.s@example.com', st: s4.id, seats: ['E1', 'E2'], total: 1100, date: '2025-11-05 17:15:00' },
+        { name: 'Siddharth Nair', email: 'sid.n@example.com', st: s6.id, seats: ['F1', 'F2', 'F3'], total: 1050, date: '2025-12-25 15:00:00' },
+        { name: 'Neha Gupta', email: 'neha.g@example.com', st: s2.id, seats: ['B4', 'B5', 'B6'], total: 1350, date: '2026-01-18 19:45:00' },
+        { name: 'Rahul Joshi', email: 'rahul.j@example.com', st: s1.id, seats: ['H1', 'H2', 'H3', 'H4'], total: 1900, date: '2026-03-22 21:30:00' },
+        { name: 'Tanvi Deshmukh', email: 'tanvi.d@example.com', st: s6.id, seats: ['A1', 'A2'], total: 700, date: '2026-06-10 14:00:00' },
+        { name: 'Aditya Kulkarni', email: 'aditya.k@example.com', st: s2.id, seats: ['E7', 'E8', 'E9'], total: 1450, date: '2026-08-14 18:00:00' },
+        { name: 'Zoya Khan', email: 'zoya.k@example.com', st: s4.id, seats: ['VIP-B1', 'VIP-B2'], total: 1200, date: '2026-10-02 20:30:00' },
+    ];
+    for (let i = 0; i < historical.length; i++) {
+        const h = historical[i];
+        const code = `MOVIEHUB-HIST-${i + 10}X`;
+        bookingStmt.run(node_crypto_1.default.randomUUID(), code, h.st, h.name, h.email, JSON.stringify(h.seats), h.total, 'confirmed', 'paid', 'Credit Card', 'none', h.date, null);
+    }
     // 5. Seed Snacks
     const snackStmt = db.prepare(`
     INSERT INTO snacks (id, name, icon, price, in_stock, category, description)

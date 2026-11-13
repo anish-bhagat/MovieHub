@@ -32,8 +32,8 @@ function createApp(db) {
         crossOriginEmbedderPolicy: false,
     }));
     app.use((0, cors_1.default)());
-    app.use(express_1.default.json({ limit: '1mb' }));
-    app.use(express_1.default.urlencoded({ extended: true }));
+    app.use(express_1.default.json({ limit: '10mb' }));
+    app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
     // Repositories
     const cinemaRepo = new cinema_repository_js_1.CinemaRepository(db);
     const movieRepo = new movie_repository_js_1.MovieRepository(db);

@@ -211,3 +211,169 @@
   gap: 10px;
   margin-top: 20px;
 }
+
+/* ================= POSTER UPLOADER & VISUAL CROPPER ================= */
+.movie-poster-field {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.poster-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.poster-tab-group {
+  display: inline-flex;
+  background: rgba(148, 163, 184, 0.15);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.poster-tab-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: 600 12px 'DM Sans', sans-serif;
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.poster-tab-btn:hover {
+  color: var(--ink);
+}
+
+.poster-tab-btn.active {
+  background: var(--card-bg, #ffffff);
+  color: var(--ink);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.poster-dropzone {
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(148, 163, 184, 0.04);
+  transition: all 0.2s ease;
+}
+
+.poster-dropzone:hover,
+.poster-dropzone.dragover {
+  border-color: var(--accent);
+  background: rgba(201, 80, 50, 0.05);
+}
+
+.dropzone-icon {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.dropzone-main {
+  font-size: 14px;
+  margin: 0;
+  color: var(--ink);
+}
+
+.dropzone-hint {
+  font-size: 11px;
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.poster-adjust-area {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  background: rgba(148, 163, 184, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.cropper-viewport-wrap {
+  position: relative;
+  width: 150px;
+  height: 225px; /* 2:3 ratio */
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  border: 2px solid var(--line);
+  flex-shrink: 0;
+  background: #000;
+}
+
+.poster-cropper-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+
+.poster-cropper-canvas:active {
+  cursor: grabbing;
+}
+
+.cropper-drag-hint {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  padding: 3px 4px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.cropper-controls {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cropper-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cropper-control-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cropper-range {
+  flex: 1;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.cropper-val-badge {
+  font-family: monospace;
+  font-size: 12px;
+  min-width: 42px;
+  text-align: right;
+  color: var(--muted);
+}
+
+.cropper-actions-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

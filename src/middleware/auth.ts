@@ -10,16 +10,23 @@ export function requireAdminAuth(req: Request, res: Response, next: NextFunction
     return;
   }
 
-  const expectedToken = env.ADMIN_TOKEN;
+  // Support comma-separated list of admin tokens
+  const validTokens = env.ADMIN_TOKEN.split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
 
-  // Use timingSafeEqual to avoid timing attack vulnerabilities
-  const expectedBuffer = Buffer.from(expectedToken);
   const providedBuffer = Buffer.from(tokenHeader);
 
-  if (
-    expectedBuffer.length !== providedBuffer.length ||
-    !crypto.timingSafeEqual(expectedBuffer, providedBuffer)
-  ) {
+  // Check if provided token matches any valid admin token (timing-safe)
+  const isMatch = validTokens.some((token) => {
+    const expectedBuffer = Buffer.from(token);
+    return (
+      expectedBuffer.length === providedBuffer.length &&
+      crypto.timingSafeEqual(expectedBuffer, providedBuffer)
+    );
+  });
+
+  if (!isMatch) {
     res.status(403).json({ error: 'Invalid admin token.' });
     return;
   }

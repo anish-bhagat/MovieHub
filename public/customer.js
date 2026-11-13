@@ -25,6 +25,7 @@ let selectedDate = null;
 let selectedShowtime = null;
 let selectedSeats = [];
 let selectedSnacks = {}; // { 'popcorn_caramel': { id, name, qty, price } }
+let currentShowtimeDetails = null;
 let currentPricingTiers = { VIP: 450, Prime: 300, Classic: 200 };
 
 // 10-Minute Seat Timer State
@@ -337,12 +338,14 @@ function openCinemaShowtimesModal(movie) {
   const movieShowtimes = showtimes.filter((s) => s.movieId === movie.id);
   const distinctDates = Array.from(new Set(movieShowtimes.map((s) => s.date))).sort();
 
+  const today = new Date().toISOString().split('T')[0];
   if (!distinctDates.length) {
-    const today = new Date().toISOString().split('T')[0];
     distinctDates.push(today);
   }
 
-  selectedDate = distinctDates[0];
+  // Prioritize today or closest upcoming date instead of defaulting to earliest past date
+  const upcomingDate = distinctDates.find((d) => d >= today);
+  selectedDate = upcomingDate || distinctDates[0];
   renderDateTabs(distinctDates);
   renderCinemasForDate(selectedDate);
 
@@ -526,7 +529,12 @@ function renderCinemasForDate(dateStr) {
       tiersSub.className = 'pill-tiers-sub';
       tiersSub.textContent = `Classic: ₹${classicPrice} · Prime: ₹${primePrice} · VIP: ₹${vipPrice}`;
 
-      pill.append(topRow, catEl, priceRow, tiersSub);
+      // Call to action button hint
+      const ctaEl = document.createElement('div');
+      ctaEl.className = 'pill-cta-label';
+      ctaEl.textContent = 'Select Seats →';
+
+      pill.append(topRow, catEl, priceRow, tiersSub, ctaEl);
 
       pill.addEventListener('click', () => proceedToSeatingWindow(show));
       pill.addEventListener('keydown', (e) => {

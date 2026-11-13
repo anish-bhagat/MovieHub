@@ -165,6 +165,18 @@ export interface AdminSummary {
     upcomingShowtimes: number;
     confirmedTickets: number;
 }
+export interface GenreAnalytics {
+    genre: string;
+    ticketsSold: number;
+    revenue: number;
+    percentage: number;
+}
+export interface TimeSeriesPoint {
+    period: string;
+    label: string;
+    ticketsSold: number;
+    revenue: number;
+}
 export interface AnalyticsSummary {
     grossRevenue: number;
     ticketRevenue: number;
@@ -174,4 +186,9 @@ export interface AnalyticsSummary {
     totalSeatsSold: number;
     topMovie: string;
     topCinema: string;
+    topGenre: string;
+    topGenreTickets: number;
+    genreBreakdown: GenreAnalytics[];
+    monthlySales: TimeSeriesPoint[];
+    yearlySales: TimeSeriesPoint[];
 }

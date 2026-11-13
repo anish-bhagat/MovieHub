@@ -372,6 +372,13 @@ describe('MovieHub Comprehensive API Test Suite', () => {
       expect(res.body).toHaveProperty('ticketRevenue');
       expect(res.body).toHaveProperty('snackRevenue');
       expect(res.body).toHaveProperty('occupancyRate');
+      expect(res.body).toHaveProperty('topGenre');
+      expect(res.body).toHaveProperty('genreBreakdown');
+      expect(res.body).toHaveProperty('monthlySales');
+      expect(res.body).toHaveProperty('yearlySales');
+      expect(Array.isArray(res.body.genreBreakdown)).toBe(true);
+      expect(Array.isArray(res.body.monthlySales)).toBe(true);
+      expect(Array.isArray(res.body.yearlySales)).toBe(true);
       expect(res.body.grossRevenue).toBeGreaterThan(0);
     });
 

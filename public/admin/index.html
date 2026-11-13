@@ -127,6 +127,56 @@
           <strong id="analyticsTopCinema" class="text-truncate">—</strong>
           <span class="card-sub">Highest customer footfall</span>
         </article>
+
+        <article class="analytics-card top-genre">
+          <span class="card-label">Top Selling Genre</span>
+          <strong id="analyticsTopGenre" class="text-truncate">—</strong>
+          <span class="card-sub" id="analyticsTopGenreSub">Most tickets booked</span>
+        </article>
+      </div>
+
+      <!-- Visual Analytics & Charts Grid -->
+      <div class="analytics-charts-grid">
+        <!-- Chart 1: Ticket Sales Volume (Monthly / Yearly) -->
+        <article class="analytics-chart-card">
+          <div class="chart-card-header">
+            <div>
+              <p class="chart-eyebrow">SALES TRENDS</p>
+              <h3 class="chart-title">Ticket Sales Volume</h3>
+            </div>
+            <div class="chart-btn-group" role="group" aria-label="Sales Period">
+              <button id="chartMonthlyBtn" class="chart-btn active" type="button">Monthly</button>
+              <button id="chartYearlyBtn" class="chart-btn" type="button">Yearly</button>
+            </div>
+          </div>
+          <div class="chart-body">
+            <div id="ticketSalesChart" class="ticket-bar-chart">
+              <!-- Rendered Bar Chart -->
+            </div>
+          </div>
+          <div class="chart-footer">
+            <span id="ticketSalesTrendLabel">Showing tickets sold over time</span>
+          </div>
+        </article>
+
+        <!-- Chart 2: Genre Distribution & Max Tickets Breakdown -->
+        <article class="analytics-chart-card">
+          <div class="chart-card-header">
+            <div>
+              <p class="chart-eyebrow">GENRE POPULARITY</p>
+              <h3 class="chart-title">Tickets Sold by Genre</h3>
+            </div>
+            <span id="genreLeaderBadge" class="genre-leader-badge">Top: —</span>
+          </div>
+          <div class="chart-body">
+            <div id="genreDistributionChart" class="genre-progress-list">
+              <!-- Rendered Genre Bars -->
+            </div>
+          </div>
+          <div class="chart-footer">
+            <span id="genreSummaryText">Comparison of genre ticket share and popularity</span>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -284,9 +334,55 @@
           <label>Age certificate
             <input id="movieCertificate" maxlength="24" required placeholder="e.g. U/A">
           </label>
-          <label>Poster image URL
-            <input id="moviePosterUrl" type="url" maxlength="1200" placeholder="https://…">
-          </label>
+          <div class="movie-poster-field">
+            <div class="poster-field-header">
+              <label>Movie Poster Artwork</label>
+              <div class="poster-tab-group" role="tablist">
+                <button type="button" id="posterTabUpload" class="poster-tab-btn active">📁 Upload & Adjust JPG</button>
+                <button type="button" id="posterTabUrl" class="poster-tab-btn">🔗 Link URL</button>
+              </div>
+            </div>
+
+            <!-- Upload & Adjust Section -->
+            <div id="posterUploadPane" class="poster-pane">
+              <!-- Dropzone / Picker -->
+              <div id="posterDropzone" class="poster-dropzone">
+                <input type="file" id="posterFileInput" accept="image/jpeg,image/png,image/webp" hidden>
+                <div class="dropzone-body">
+                  <span class="dropzone-icon">🖼️</span>
+                  <p class="dropzone-main"><strong>Click to upload JPG / PNG</strong> or drag & drop</p>
+                  <p class="dropzone-hint">Standard 2:3 cinema poster ratio · Interactive zoom & repositioning</p>
+                </div>
+              </div>
+
+              <!-- Interactive Cropping / Adjusting Canvas Box (appears when image loaded) -->
+              <div id="posterAdjustArea" class="poster-adjust-area" hidden>
+                <div class="cropper-viewport-wrap">
+                  <canvas id="posterCanvas" width="400" height="600" class="poster-cropper-canvas"></canvas>
+                  <div class="cropper-drag-hint">✋ Drag image to reposition</div>
+                </div>
+
+                <div class="cropper-controls">
+                  <div class="cropper-slider-row">
+                    <span class="cropper-control-label">🔍 Zoom:</span>
+                    <input type="range" id="posterZoomRange" min="1" max="3" step="0.05" value="1" class="cropper-range">
+                    <span id="posterZoomDisplay" class="cropper-val-badge">100%</span>
+                  </div>
+
+                  <div class="cropper-actions-row">
+                    <button type="button" id="posterRotateBtn" class="button tiny light">🔄 Rotate 90°</button>
+                    <button type="button" id="posterResetBtn" class="button tiny light">Reset View</button>
+                    <button type="button" id="posterReplaceBtn" class="button tiny light">Choose Different File</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Fallback URL Section -->
+            <div id="posterUrlPane" class="poster-pane" hidden>
+              <input id="moviePosterUrl" type="url" maxlength="1200" placeholder="https://… (Paste image URL)">
+            </div>
+          </div>
           <label>Artwork style
             <select id="movieArt">
               <option value="art-blue">Blue</option>

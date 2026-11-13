@@ -931,6 +931,44 @@ body {
   margin-top: 2px;
 }
 
+.pill-cta-label {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.showtime-pill:hover .pill-cta-label {
+  color: #ff7854;
+  transform: translateX(2px);
+}
+
+.step-guide-banner {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #60a5fa;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+[data-theme="light"] .step-guide-banner {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
 /* PVR Showtime Info Dialog */
 .pvr-info-dialog {
   background: transparent;

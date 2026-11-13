@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import crypto from 'node:crypto';
-import { Booking, ScanLog, AnalyticsSummary } from '../../types/index.js';
+import { Booking, ScanLog, AnalyticsSummary, GenreAnalytics, TimeSeriesPoint } from '../../types/index.js';
 
 interface BookingRow {
   id: string;
@@ -303,12 +303,15 @@ export class BookingRepository {
     }
 
     const sql = `
-      SELECT b.id, b.total, b.seats, b.snacks, m.name as movie_name, c.name as cinema_name
+      SELECT b.id, b.total, b.seats, b.snacks, b.created_at,
+             m.name as movie_name, m.genre as movie_genre,
+             c.name as cinema_name, s.date as showtime_date
       FROM bookings b
       JOIN showtimes s ON b.showtime_id = s.id
       JOIN movies m ON s.movie_id = m.id
       JOIN cinemas c ON s.cinema_id = c.id
       WHERE b.status IN ('confirmed', 'checked_in') ${dateFilter}
+      ORDER BY b.created_at ASC
     `;
 
     const rows = this.db.prepare(sql).all() as {
@@ -316,8 +319,11 @@ export class BookingRepository {
       total: number;
       seats: string;
       snacks: string;
+      created_at: string;
       movie_name: string;
+      movie_genre: string;
       cinema_name: string;
+      showtime_date: string;
     }[];
 
     let grossRevenue = 0;
@@ -325,15 +331,20 @@ export class BookingRepository {
     let totalSeatsSold = 0;
     const movieCounts: Record<string, number> = {};
     const cinemaCounts: Record<string, number> = {};
+    const genreStats: Record<string, { ticketsSold: number; revenue: number }> = {};
+    const monthlyMap: Record<string, { ticketsSold: number; revenue: number }> = {};
+    const yearlyMap: Record<string, { ticketsSold: number; revenue: number }> = {};
 
     for (const r of rows) {
       grossRevenue += Number(r.total) || 0;
 
-      // Parse seats
+      // Parse seats count
+      let seatsCount = 0;
       try {
         const sArr = JSON.parse(r.seats || '[]');
-        if (Array.isArray(sArr)) totalSeatsSold += sArr.length;
+        if (Array.isArray(sArr)) seatsCount = sArr.length;
       } catch {}
+      totalSeatsSold += seatsCount;
 
       // Parse snacks
       try {
@@ -347,10 +358,48 @@ export class BookingRepository {
 
       // Counts for top movie and cinema
       if (r.movie_name) {
-        movieCounts[r.movie_name] = (movieCounts[r.movie_name] || 0) + 1;
+        movieCounts[r.movie_name] = (movieCounts[r.movie_name] || 0) + seatsCount;
       }
       if (r.cinema_name) {
-        cinemaCounts[r.cinema_name] = (cinemaCounts[r.cinema_name] || 0) + 1;
+        cinemaCounts[r.cinema_name] = (cinemaCounts[r.cinema_name] || 0) + seatsCount;
+      }
+
+      // Genre aggregation (split comma-separated genres like "Sci-Fi, Adventure, Drama")
+      const rawGenres = (r.movie_genre || 'Cinema')
+        .split(',')
+        .map((g) => g.trim())
+        .filter(Boolean);
+
+      const genres = rawGenres.length > 0 ? rawGenres : ['Cinema'];
+      for (const g of genres) {
+        if (!genreStats[g]) {
+          genreStats[g] = { ticketsSold: 0, revenue: 0 };
+        }
+        genreStats[g].ticketsSold += seatsCount;
+        genreStats[g].revenue += Number(r.total) || 0;
+      }
+
+      // Time-series aggregation (monthly and yearly)
+      const rawDate = (r.created_at || r.showtime_date || '').toString().trim();
+      if (rawDate) {
+        const dateObj = new Date(rawDate.replace(' ', 'T'));
+        if (!isNaN(dateObj.getTime())) {
+          const year = dateObj.getFullYear().toString();
+          const monthNum = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const monthKey = `${year}-${monthNum}`;
+
+          if (!monthlyMap[monthKey]) {
+            monthlyMap[monthKey] = { ticketsSold: 0, revenue: 0 };
+          }
+          monthlyMap[monthKey].ticketsSold += seatsCount;
+          monthlyMap[monthKey].revenue += Number(r.total) || 0;
+
+          if (!yearlyMap[year]) {
+            yearlyMap[year] = { ticketsSold: 0, revenue: 0 };
+          }
+          yearlyMap[year].ticketsSold += seatsCount;
+          yearlyMap[year].revenue += Number(r.total) || 0;
+        }
       }
     }
 
@@ -375,6 +424,47 @@ export class BookingRepository {
       }
     }
 
+    // Genre Breakdown & Top Genre
+    const genreEntries = Object.entries(genreStats);
+    const sumGenreTickets = genreEntries.reduce((sum, [_, v]) => sum + v.ticketsSold, 0) || 1;
+    const genreBreakdown: GenreAnalytics[] = genreEntries
+      .map(([genre, data]) => ({
+        genre,
+        ticketsSold: data.ticketsSold,
+        revenue: Math.round(data.revenue * 100) / 100,
+        percentage: Math.round((data.ticketsSold / sumGenreTickets) * 1000) / 10,
+      }))
+      .sort((a, b) => b.ticketsSold - a.ticketsSold);
+
+    const topGenreItem = genreBreakdown[0];
+    const topGenre = topGenreItem ? topGenreItem.genre : 'N/A';
+    const topGenreTickets = topGenreItem ? topGenreItem.ticketsSold : 0;
+
+    // Monthly Sales
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlySales: TimeSeriesPoint[] = Object.keys(monthlyMap)
+      .sort()
+      .map((period) => {
+        const [y, m] = period.split('-');
+        const monthLabel = monthNames[parseInt(m, 10) - 1] || m;
+        return {
+          period,
+          label: `${monthLabel} ${y}`,
+          ticketsSold: monthlyMap[period].ticketsSold,
+          revenue: Math.round(monthlyMap[period].revenue * 100) / 100,
+        };
+      });
+
+    // Yearly Sales
+    const yearlySales: TimeSeriesPoint[] = Object.keys(yearlyMap)
+      .sort()
+      .map((year) => ({
+        period: year,
+        label: year,
+        ticketsSold: yearlyMap[year].ticketsSold,
+        revenue: Math.round(yearlyMap[year].revenue * 100) / 100,
+      }));
+
     // Compute occupancy rate against scheduled showtimes capacity (standard 80 seats per screen)
     const showtimesCountRow = this.db.prepare(`
       SELECT COUNT(*) as cnt FROM showtimes WHERE status = 'scheduled'
@@ -392,6 +482,11 @@ export class BookingRepository {
       totalSeatsSold,
       topMovie,
       topCinema,
+      topGenre,
+      topGenreTickets,
+      genreBreakdown,
+      monthlySales,
+      yearlySales,
     };
   }
 
